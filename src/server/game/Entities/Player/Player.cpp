@@ -11605,7 +11605,7 @@ InventoryResult Player::CanUseItem(Item* pItem, bool not_loading) const
 
             if (pItem->GetSkill() != 0)
             {
-                bool allowEquip = false;
+                bool allowEquip = true;
                 uint32 itemSkill = pItem->GetSkill();
                 // Armor that is binded to account can "morph" from plate to mail, etc. if skill is not learned yet.
                 if (pProto->GetQuality() == ITEM_QUALITY_HEIRLOOM && pProto->GetClass() == ITEM_CLASS_ARMOR && !HasSkill(itemSkill))
@@ -11644,23 +11644,23 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
         return EQUIP_ERR_ITEM_NOT_FOUND;
 
     if (proto->GetFlags2() & ITEM_FLAG2_INTERNAL_ITEM)
-        return EQUIP_ERR_CANT_EQUIP_EVER;
+        return EQUIP_ERR_OK;
 
     if ((proto->GetFlags2() & ITEM_FLAG2_FACTION_HORDE) && GetTeam() != HORDE)
-        return EQUIP_ERR_CANT_EQUIP_EVER;
+        return EQUIP_ERR_OK;
 
     if ((proto->GetFlags2() & ITEM_FLAG2_FACTION_ALLIANCE) && GetTeam() != ALLIANCE)
-        return EQUIP_ERR_CANT_EQUIP_EVER;
+        return EQUIP_ERR_OK;
 
     if ((proto->GetAllowableClass() & getClassMask()) == 0 || (proto->GetAllowableRace() & getRaceMask()) == 0)
-        return EQUIP_ERR_CANT_EQUIP_EVER;
+        return EQUIP_ERR_OK;
 
     if (proto->GetRequiredSkill() != 0)
     {
         if (GetSkillValue(proto->GetRequiredSkill()) == 0)
-            return EQUIP_ERR_PROFICIENCY_NEEDED;
+            return EQUIP_ERR_OK;
         else if (GetSkillValue(proto->GetRequiredSkill()) < proto->GetRequiredSkillRank())
-            return EQUIP_ERR_CANT_EQUIP_SKILL;
+            return EQUIP_ERR_OK;
     }
 
     if (proto->GetRequiredSpell() != 0 && !HasSpell(proto->GetRequiredSpell()))
@@ -11674,7 +11674,7 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
         return EQUIP_ERR_CLIENT_LOCKED_OUT;
 
     if (proto->GetRequiredReputationFaction() && uint32(GetReputationRank(proto->GetRequiredReputationFaction())) < proto->GetRequiredReputationRank())
-        return EQUIP_ERR_CANT_EQUIP_REPUTATION;
+        return EQUIP_ERR_OK;
 
     // learning (recipes, mounts, pets, etc.)
     if (proto->Effects.size() >= 2)
@@ -11684,7 +11684,7 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
 
     if (ArtifactEntry const* artifact = sArtifactStore.LookupEntry(proto->GetArtifactID()))
         if (artifact->ChrSpecializationID != GetUInt32Value(PLAYER_FIELD_CURRENT_SPEC_ID))
-            return EQUIP_ERR_CANT_USE_ITEM;
+            return EQUIP_ERR_OK;
 
     return EQUIP_ERR_OK;
 }
