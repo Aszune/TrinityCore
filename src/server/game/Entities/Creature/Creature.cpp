@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -38,6 +38,7 @@
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
+#include "PhasingHandler.h"
 #include "Player.h"
 #include "PoolMgr.h"
 #include "QuestDef.h"
@@ -677,7 +678,7 @@ void Creature::Update(uint32 diff)
 
                 if (HasFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_REGENERATE_POWER))
                 {
-                    if (getPowerType() == POWER_ENERGY)
+                    if (GetPowerType() == POWER_ENERGY)
                         Regenerate(POWER_ENERGY);
                     else
                         RegenerateMana();
@@ -722,10 +723,7 @@ void Creature::RegenerateMana()
         addvalue = maxValue / 3;
 
     // Apply modifiers (if any).
-    AuraEffectList const& ModPowerRegenPCTAuras = GetAuraEffectsByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
-    for (AuraEffectList::const_iterator i = ModPowerRegenPCTAuras.begin(); i != ModPowerRegenPCTAuras.end(); ++i)
-        if ((*i)->GetMiscValue() == POWER_MANA)
-            AddPct(addvalue, (*i)->GetAmount());
+    addvalue *= GetTotalAuraMultiplierByMiscValue(SPELL_AURA_MOD_POWER_REGEN_PERCENT, POWER_MANA);
 
     addvalue += GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_POWER_REGEN, POWER_MANA) * CREATURE_REGEN_INTERVAL / (5 * IN_MILLISECONDS);
 
@@ -756,9 +754,7 @@ void Creature::RegenerateHealth()
         addvalue = maxValue/3;
 
     // Apply modifiers (if any).
-    AuraEffectList const& ModPowerRegenPCTAuras = GetAuraEffectsByType(SPELL_AURA_MOD_HEALTH_REGEN_PERCENT);
-    for (AuraEffectList::const_iterator i = ModPowerRegenPCTAuras.begin(); i != ModPowerRegenPCTAuras.end(); ++i)
-        AddPct(addvalue, (*i)->GetAmount());
+    addvalue *= GetTotalAuraMultiplier(SPELL_AURA_MOD_HEALTH_REGEN_PERCENT);
 
     addvalue += GetTotalAuraModifier(SPELL_AURA_MOD_REGEN) * CREATURE_REGEN_INTERVAL  / (5 * IN_MILLISECONDS);
 
@@ -811,7 +807,7 @@ bool Creature::AIM_Destroy()
     return true;
 }
 
-bool Creature::AIM_Initialize(CreatureAI* ai)
+bool Creature::AIM_Create(CreatureAI* ai /*= nullptr*/)
 {
     // make sure nothing can change the AI during AI update
     if (m_AI_locked)
@@ -825,12 +821,24 @@ bool Creature::AIM_Initialize(CreatureAI* ai)
     Motion_Initialize();
 
     i_AI = ai ? ai : FactorySelector::selectAI(this);
+    return true;
+}
 
+void Creature::AI_InitializeAndEnable()
+{
     IsAIEnabled = true;
     i_AI->InitializeAI();
     // Initialize vehicle
     if (GetVehicleKit())
         GetVehicleKit()->Reset();
+}
+
+bool Creature::AIM_Initialize(CreatureAI* ai)
+{
+    if (!AIM_Create(ai))
+        return false;
+
+    AI_InitializeAndEnable();
     return true;
 }
 
@@ -849,17 +857,16 @@ void Creature::Motion_Initialize()
         GetMotionMaster()->Initialize();
 }
 
-bool Creature::Create(ObjectGuid::LowType guidlow, Map* map, uint32 /*phaseMask*/, uint32 entry, float x, float y, float z, float ang, CreatureData const* data /*= nullptr*/, uint32 vehId /*= 0*/)
+bool Creature::Create(ObjectGuid::LowType guidlow, Map* map, uint32 entry, float x, float y, float z, float ang, CreatureData const* data /*= nullptr*/, uint32 vehId /*= 0*/)
 {
     ASSERT(map);
     SetMap(map);
 
-    if (data && data->phaseid)
-        SetInPhase(data->phaseid, false, true);
-
-    if (data && data->phaseGroup)
-        for (auto ph : sDB2Manager.GetPhasesForGroup(data->phaseGroup))
-            SetInPhase(ph, false, true);
+    if (data)
+    {
+        PhasingHandler::InitDbPhaseShift(GetPhaseShift(), data->phaseUseFlags, data->phaseId, data->phaseGroup);
+        PhasingHandler::InitDbVisibleMapId(GetPhaseShift(), data->terrainSwapMap);
+    }
 
     CreatureTemplate const* cinfo = sObjectMgr->GetCreatureTemplate(entry);
     if (!cinfo)
@@ -941,6 +948,40 @@ bool Creature::Create(ObjectGuid::LowType guidlow, Map* map, uint32 /*phaseMask*
     }
 
     return true;
+}
+
+Creature* Creature::CreateCreature(uint32 entry, Map* map, Position const& pos, uint32 vehId /*= 0*/)
+{
+    CreatureTemplate const* cInfo = sObjectMgr->GetCreatureTemplate(entry);
+    if (!cInfo)
+        return nullptr;
+
+    ObjectGuid::LowType lowGuid;
+    if (vehId || cInfo->VehicleId)
+        lowGuid = map->GenerateLowGuid<HighGuid::Vehicle>();
+    else
+        lowGuid = map->GenerateLowGuid<HighGuid::Creature>();
+
+    Creature* creature = new Creature();
+    if (!creature->Create(lowGuid, map, entry, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation(), nullptr, vehId))
+    {
+        delete creature;
+        return nullptr;
+    }
+
+    return creature;
+}
+
+Creature* Creature::CreateCreatureFromDB(ObjectGuid::LowType spawnId, Map* map, bool addToMap /*= true*/, bool allowDuplicate /*= false*/)
+{
+    Creature* creature = new Creature();
+    if (!creature->LoadCreatureFromDB(spawnId, map, addToMap, allowDuplicate))
+    {
+        delete creature;
+        return nullptr;
+    }
+
+    return creature;
 }
 
 void Creature::InitializeReactState()
@@ -1062,10 +1103,10 @@ void Creature::SaveToDB()
     }
 
     uint32 mapId = GetTransport() ? GetTransport()->GetGOInfo()->moTransport.SpawnMap : GetMapId();
-    SaveToDB(mapId, data->spawnMask, GetPhaseMask());
+    SaveToDB(mapId, data->spawnMask);
 }
 
-void Creature::SaveToDB(uint32 mapid, uint32 spawnMask, uint32 phaseMask)
+void Creature::SaveToDB(uint32 mapid, uint64 spawnMask)
 {
     // update in loaded data
     if (!m_spawnId)
@@ -1107,7 +1148,6 @@ void Creature::SaveToDB(uint32 mapid, uint32 spawnMask, uint32 phaseMask)
     // data->guid = guid must not be updated at save
     data.id = GetEntry();
     data.mapid = mapid;
-    data.phaseMask = phaseMask;
     data.displayid = displayId;
     data.equipmentId = GetCurrentEquipmentId();
     if (!GetTransport())
@@ -1141,8 +1181,8 @@ void Creature::SaveToDB(uint32 mapid, uint32 spawnMask, uint32 phaseMask)
     data.unit_flags3 = unitFlags3;
     data.dynamicflags = dynamicflags;
 
-    data.phaseid = GetDBPhase() > 0 ? GetDBPhase() : 0;
-    data.phaseGroup = GetDBPhase() < 0 ? abs(GetDBPhase()) : 0;
+    data.phaseId = GetDBPhase() > 0 ? GetDBPhase() : data.phaseId;
+    data.phaseGroup = GetDBPhase() < 0 ? -GetDBPhase() : data.phaseGroup;
 
     // update in DB
     SQLTransaction trans = WorldDatabase.BeginTransaction();
@@ -1157,8 +1197,8 @@ void Creature::SaveToDB(uint32 mapid, uint32 spawnMask, uint32 phaseMask)
     stmt->setUInt64(index++, m_spawnId);
     stmt->setUInt32(index++, GetEntry());
     stmt->setUInt16(index++, uint16(mapid));
-    stmt->setUInt32(index++, spawnMask);
-    stmt->setUInt32(index++, data.phaseid);
+    stmt->setUInt64(index++, spawnMask);
+    stmt->setUInt32(index++, data.phaseId);
     stmt->setUInt32(index++, data.phaseGroup);
     stmt->setUInt32(index++, displayId);
     stmt->setUInt8(index++, GetCurrentEquipmentId());
@@ -1186,20 +1226,22 @@ void Creature::SelectLevel()
 {
     CreatureTemplate const* cInfo = GetCreatureTemplate();
 
-    if (!HasScalableLevels())
+    // level
+    uint8 minlevel = std::min(cInfo->maxlevel, cInfo->minlevel);
+    uint8 maxlevel = std::max(cInfo->maxlevel, cInfo->minlevel);
+    uint8 level = minlevel == maxlevel ? minlevel : urand(minlevel, maxlevel);
+    SetLevel(level);
+
+    if (HasScalableLevels())
     {
-        // level
-        uint8 minlevel = std::min(cInfo->maxlevel, cInfo->minlevel);
-        uint8 maxlevel = std::max(cInfo->maxlevel, cInfo->minlevel);
-        uint8 level = minlevel == maxlevel ? minlevel : urand(minlevel, maxlevel);
-        SetLevel(level);
-    }
-    else
-    {
-        SetLevel(cInfo->levelScaling->MaxLevel);
         SetUInt32Value(UNIT_FIELD_SCALING_LEVEL_MIN, cInfo->levelScaling->MinLevel);
         SetUInt32Value(UNIT_FIELD_SCALING_LEVEL_MAX, cInfo->levelScaling->MaxLevel);
-        SetUInt32Value(UNIT_FIELD_SCALING_LEVEL_DELTA, cInfo->levelScaling->DeltaLevel);
+
+        int8 mindelta = std::min(cInfo->levelScaling->DeltaLevelMax, cInfo->levelScaling->DeltaLevelMin);
+        int8 maxdelta = std::max(cInfo->levelScaling->DeltaLevelMax, cInfo->levelScaling->DeltaLevelMin);
+        int8 delta = mindelta == maxdelta ? mindelta : irand(mindelta, maxdelta);
+
+        SetInt32Value(UNIT_FIELD_SCALING_LEVEL_DELTA, delta);
     }
 
     UpdateLevelDependantStats();
@@ -1228,23 +1270,18 @@ void Creature::UpdateLevelDependantStats()
 
     switch (getClass())
     {
-        case CLASS_WARRIOR:
-            setPowerType(POWER_RAGE);
+        case CLASS_PALADIN:
+        case CLASS_MAGE:
+            SetMaxPower(POWER_MANA, mana);
+            SetFullPower(POWER_MANA);
             break;
-        case CLASS_ROGUE:
-            setPowerType(POWER_ENERGY);
-            break;
-        default:
-            SetMaxPower(POWER_MANA, mana); // MAX Mana
-            SetPower(POWER_MANA, mana);
+        default: // We don't set max power here, 0 makes power bar hidden
             break;
     }
 
     SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)health);
-    SetModifierValue(UNIT_MOD_MANA, BASE_VALUE, (float)mana);
 
     // damage
-
     float basedamage = stats->GenerateBaseDamage(cInfo);
 
     float weaponBaseMinDamage = basedamage;
@@ -1414,7 +1451,7 @@ bool Creature::LoadCreatureFromDB(ObjectGuid::LowType spawnId, Map* map, bool ad
 
     m_spawnId = spawnId;
     m_creatureData = data;
-    if (!Create(map->GenerateLowGuid<HighGuid::Creature>(), map, data->phaseMask, data->id, data->posX, data->posY, data->posZ, data->orientation, data))
+    if (!Create(map->GenerateLowGuid<HighGuid::Creature>(), map, data->id, data->posX, data->posY, data->posZ, data->orientation, data, 0))
         return false;
 
     //We should set first home position, because then AI calls home movement
@@ -1436,7 +1473,7 @@ bool Creature::LoadCreatureFromDB(ObjectGuid::LowType spawnId, Map* map, bool ad
         m_deathState = DEAD;
         if (CanFly())
         {
-            float tz = map->GetHeight(GetPhases(), data->posX, data->posY, data->posZ, true, MAX_FALL_DISTANCE);
+            float tz = map->GetHeight(GetPhaseShift(), data->posX, data->posY, data->posZ, true, MAX_FALL_DISTANCE);
             if (data->posZ - tz > 0.1f && Trinity::IsValidMapCoord(tz))
                 Relocate(data->posX, data->posY, tz);
         }
@@ -1504,7 +1541,7 @@ void Creature::SetSpawnHealth()
     else
     {
         curhealth = GetMaxHealth();
-        SetPower(POWER_MANA, GetMaxPower(POWER_MANA));
+        SetFullPower(POWER_MANA);
     }
 
     SetHealth((m_deathState == ALIVE || m_deathState == JUST_RESPAWNED) ? curhealth : 0);
@@ -1646,40 +1683,47 @@ bool Creature::CheckNoGrayAggroConfig(uint32 playerLevel, uint32 creatureLevel) 
 
 float Creature::GetAttackDistance(Unit const* player) const
 {
+    // WoW Wiki: the minimum radius seems to be 5 yards, while the maximum range is 45 yards
+    float maxRadius = (45.0f * sWorld->getRate(RATE_CREATURE_AGGRO));
+    float minRadius = (5.0f * sWorld->getRate(RATE_CREATURE_AGGRO));
     float aggroRate = sWorld->getRate(RATE_CREATURE_AGGRO);
-    if (aggroRate == 0)
+    uint8 expansionMaxLevel = uint8(GetMaxLevelForExpansion(GetCreatureTemplate()->RequiredExpansion));
+
+    uint32 playerLevel = player->GetLevelForTarget(this);
+    uint32 creatureLevel = GetLevelForTarget(player);
+
+    if (aggroRate == 0.0f)
         return 0.0f;
 
-    uint32 playerlevel   = player->GetLevelForTarget(this);
-    uint32 creaturelevel = GetLevelForTarget(player);
+    // The aggro radius for creatures with equal level as the player is 20 yards.
+    // The combatreach should not get taken into account for the distance so we drop it from the range (see Supremus as expample)
+    float baseAggroDistance = 20.0f - GetCombatReach();
+    float aggroRadius = baseAggroDistance;
 
-    int32 leveldif       = int32(playerlevel) - int32(creaturelevel);
-
-    // "The maximum Aggro Radius has a cap of 25 levels under. Example: A level 30 char has the same Aggro Radius of a level 5 char on a level 60 mob."
-    if (leveldif < - 25)
-        leveldif = -25;
-
-    // "The aggro radius of a mob having the same level as the player is roughly 20 yards"
-    float RetDistance = 20;
-
-    // "Aggro Radius varies with level difference at a rate of roughly 1 yard/level"
-    // radius grow if playlevel < creaturelevel
-    RetDistance -= (float)leveldif;
-
-    if (creaturelevel+5 <= sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
+    // detect range auras
+    if ((creatureLevel + 5) <= sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
     {
-        // detect range auras
-        RetDistance += GetTotalAuraModifier(SPELL_AURA_MOD_DETECT_RANGE);
+        aggroRadius += GetTotalAuraModifier(SPELL_AURA_MOD_DETECT_RANGE);
 
-        // detected range auras
-        RetDistance += player->GetTotalAuraModifier(SPELL_AURA_MOD_DETECTED_RANGE);
+        aggroRadius += player->GetTotalAuraModifier(SPELL_AURA_MOD_DETECTED_RANGE);
     }
 
-    // "Minimum Aggro Radius for a mob seems to be combat range (5 yards)"
-    if (RetDistance < 5)
-        RetDistance = 5;
+    // The aggro range of creatures with higher levels than the total player level for the expansion should get the maxlevel treatment
+    // This makes sure that creatures such as bosses wont have a bigger aggro range than the rest of the npc's
+    // The following code is used for blizzlike behavior such as skipable bosses (e.g. Commander Springvale at level 85)
+    if (creatureLevel > expansionMaxLevel)
+        aggroRadius += float(expansionMaxLevel) - float(playerLevel);
+    // + - 1 yard for each level difference between player and creature
+    else
+        aggroRadius += float(creatureLevel) - float(playerLevel);
 
-    return (RetDistance*aggroRate);
+    // Make sure that we wont go over the total range limits
+    if (aggroRadius > maxRadius)
+        aggroRadius = maxRadius;
+    else if (aggroRadius < minRadius)
+        aggroRadius = minRadius;
+
+    return (aggroRadius * aggroRate);
 }
 
 void Creature::setDeathState(DeathState s)
@@ -1730,6 +1774,7 @@ void Creature::setDeathState(DeathState s)
         SetLootRecipient(nullptr);
         ResetPlayerDamageReq();
 
+        SetCannotReachTarget(false);
         UpdateMovementFlags();
 
         ClearUnitState(uint32(UNIT_STATE_ALL_STATE & ~UNIT_STATE_IGNORE_PATHFINDING));
@@ -1867,7 +1912,7 @@ void Creature::DespawnOrUnsummon(uint32 msTimeToDespawn /*= 0*/, Seconds const& 
         ForcedDespawn(msTimeToDespawn, forceRespawnTimer);
 }
 
-bool Creature::IsImmunedToSpell(SpellInfo const* spellInfo) const
+bool Creature::IsImmunedToSpell(SpellInfo const* spellInfo, Unit* caster) const
 {
     if (!spellInfo)
         return false;
@@ -1883,7 +1928,7 @@ bool Creature::IsImmunedToSpell(SpellInfo const* spellInfo) const
     {
         if (!effect || !effect->IsEffect())
             continue;
-        if (!IsImmunedToSpellEffect(spellInfo, effect->EffectIndex))
+        if (!IsImmunedToSpellEffect(spellInfo, effect->EffectIndex, caster))
         {
             immunedToAllEffects = false;
             break;
@@ -1892,10 +1937,10 @@ bool Creature::IsImmunedToSpell(SpellInfo const* spellInfo) const
     if (immunedToAllEffects)
         return true;
 
-    return Unit::IsImmunedToSpell(spellInfo);
+    return Unit::IsImmunedToSpell(spellInfo, caster);
 }
 
-bool Creature::IsImmunedToSpellEffect(SpellInfo const* spellInfo, uint32 index) const
+bool Creature::IsImmunedToSpellEffect(SpellInfo const* spellInfo, uint32 index, Unit* caster) const
 {
     SpellEffectInfo const* effect = spellInfo->GetEffect(GetMap()->GetDifficultyID(), index);
     if (!effect)
@@ -1906,7 +1951,7 @@ bool Creature::IsImmunedToSpellEffect(SpellInfo const* spellInfo, uint32 index) 
     if (GetCreatureTemplate()->type == CREATURE_TYPE_MECHANICAL && effect->Effect == SPELL_EFFECT_HEAL)
         return true;
 
-    return Unit::IsImmunedToSpellEffect(spellInfo, index);
+    return Unit::IsImmunedToSpellEffect(spellInfo, index, caster);
 }
 
 bool Creature::isElite() const
@@ -2385,11 +2430,11 @@ void Creature::SetInCombatWithZone()
 
 bool Creature::HasSpell(uint32 spellID) const
 {
-    uint8 i;
-    for (i = 0; i < MAX_CREATURE_SPELLS; ++i)
+    for (uint8 i = 0; i < MAX_CREATURE_SPELLS; ++i)
         if (spellID == m_spells[i])
-            break;
-    return i < MAX_CREATURE_SPELLS;                         //broke before end of iteration of known spells
+            return true;
+
+    return false;
 }
 
 time_t Creature::GetRespawnTimeEx() const
@@ -2523,7 +2568,7 @@ uint8 Creature::GetLevelForTarget(WorldObject const* target) const
         // between UNIT_FIELD_SCALING_LEVEL_MIN and UNIT_FIELD_SCALING_LEVEL_MAX
         if (HasScalableLevels())
         {
-            uint8 targetLevelWithDelta = unitTarget->getLevel() + GetCreatureTemplate()->levelScaling->DeltaLevel;
+            uint8 targetLevelWithDelta = unitTarget->getLevel() + GetInt32Value(UNIT_FIELD_SCALING_LEVEL_DELTA);
 
             if (target->IsPlayer())
                 targetLevelWithDelta += target->GetUInt32Value(PLAYER_FIELD_SCALING_PLAYER_LEVEL_DELTA);
@@ -2653,6 +2698,28 @@ uint32 Creature::GetPetAutoSpellOnPos(uint8 pos) const
         return m_charmInfo->GetCharmSpell(pos)->GetAction();
 }
 
+float Creature::GetPetChaseDistance() const
+{
+    float range = MELEE_RANGE;
+
+    for (uint8 i = 0; i < GetPetAutoSpellSize(); ++i)
+    {
+        uint32 spellID = GetPetAutoSpellOnPos(i);
+        if (!spellID)
+            continue;
+
+        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellID))
+        {
+            if (spellInfo->GetRecoveryTime() == 0 &&  // No cooldown
+                    spellInfo->RangeEntry->ID != 1 /*Self*/ && spellInfo->RangeEntry->ID != 2 /*Combat Range*/ &&
+                        spellInfo->GetMinRange() > range)
+                range = spellInfo->GetMinRange();
+        }
+    }
+
+    return range;
+}
+
 void Creature::SetPosition(float x, float y, float z, float o)
 {
     // prevent crash when a bad coord is sent by the client
@@ -2744,7 +2811,7 @@ void Creature::UpdateMovementFlags()
         return;
 
     // Set the movement flags if the creature is in that mode. (Only fly if actually in air, only swim if in water, etc)
-    float ground = GetMap()->GetHeight(GetPhases(), GetPositionX(), GetPositionY(), GetPositionZMinusOffset());
+    float ground = GetMap()->GetHeight(GetPhaseShift(), GetPositionX(), GetPositionY(), GetPositionZMinusOffset());
 
     bool isInAir = (G3D::fuzzyGt(GetPositionZMinusOffset(), ground + 0.05f) || G3D::fuzzyLt(GetPositionZMinusOffset(), ground - 0.05f)); // Can be underground too, prevent the falling
 
