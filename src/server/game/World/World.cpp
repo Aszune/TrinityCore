@@ -1080,6 +1080,7 @@ void World::LoadConfigSettings(bool reload)
     m_bool_configs[CONFIG_WEATHER] = sConfigMgr->GetBoolDefault("ActivateWeather", true);
 
     m_int_configs[CONFIG_DISABLE_BREATHING] = sConfigMgr->GetIntDefault("DisableWaterBreath", SEC_CONSOLE);
+    m_int_configs[CONFIG_DISABLE_FATIGUE] = sConfigMgr->GetIntDefault("DisableFatigue", SEC_CONSOLE);
 
     if (reload)
     {

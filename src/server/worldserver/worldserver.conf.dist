@@ -901,6 +901,17 @@ RecruitAFriend.MaxDifference = 4
 DisableWaterBreath = 4
 
 #
+#    DisableFatigue
+#        Description: Required security level for fatigue.
+#        Default:     4  - (Disabled)
+#                     0  - (Enabled, Everyone)
+#                     1  - (Enabled, Mods/GMs/Admins)
+#                     2  - (Enabled, GMs/Admins)
+#                     3  - (Enabled, Admins)
+
+DisableFatigue = 4
+
+#
 #    AllFlightPaths
 #        Description: Character knows all flight paths (of both factions) after creation.
 #        Default:     0 - (Disabled)
