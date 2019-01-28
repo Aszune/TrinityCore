@@ -28,6 +28,7 @@
 #include "ItemDefines.h"
 #include "ItemEnchantmentMgr.h"
 #include "MapReference.h"
+#include "Optional.h"
 #include "PetDefines.h"
 #include "PlayerTaxi.h"
 #include "QuestDef.h"
@@ -835,6 +836,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOAD_GARRISON_BUILDINGS,
     PLAYER_LOGIN_QUERY_LOAD_GARRISON_FOLLOWERS,
     PLAYER_LOGIN_QUERY_LOAD_GARRISON_FOLLOWER_ABILITIES,
+    PLAYER_LOGIN_QUERY_LOAD_ALL_PETS,
     MAX_PLAYER_LOGIN_QUERY
 };
 
@@ -918,6 +920,28 @@ enum PlayerLogXPReason : uint8
 {
     LOG_XP_REASON_KILL    = 0,
     LOG_XP_REASON_NO_KILL = 1
+};
+
+struct PlayerPetData
+{
+    uint32 PetId;
+    uint32 CreatureId;
+    uint64 Owner;
+    uint32 DisplayId;
+    uint32 Petlevel;
+    uint32 PetExp;
+    ReactStates Reactstate;
+    uint8 Slot;
+    std::string Name;
+    bool Renamed;
+    bool Active;
+    uint32 SavedHealth;
+    uint32 SavedMana;
+    std::string Actionbar;
+    uint32 Timediff;
+    uint32 SummonSpellId;
+    PetType Type;
+    uint16 SpecId;
 };
 
 class Player;
@@ -1328,6 +1352,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         void SendItemDurations();
         void LoadCorpse(PreparedQueryResult result);
         void LoadPet();
+        void LoadPetsFromDB(PreparedQueryResult result);
 
         bool AddItem(uint32 itemId, uint32 count);
 
@@ -2378,6 +2403,16 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         void SendPlayerChoice(ObjectGuid sender, int32 choiceId);
 
         bool MeetPlayerCondition(uint32 conditionId) const;
+        
+        PlayerPetData* GetPlayerPetDataById(uint32 petId);
+        PlayerPetData* GetPlayerPetDataBySlot(uint8 slot);
+        PlayerPetData* GetPlayerPetDataByCreatureId(uint32 creatureId);
+        PlayerPetData* GetPlayerPetDataCurrent();
+        Optional<uint8> GetFirstUnusedActivePetSlot();
+        Optional<uint8> GetFirstUnusedPetSlot();
+        void DeleteFromPlayerPetDataStore(uint32 petNumber);
+        void AddToPlayerPetDataStore(PlayerPetData* playerPetData);
+        void SendPetTameFailure(PetTameFailureReason reason);
 
     protected:
         // Gamemaster whisper whitelist
@@ -2730,6 +2765,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         void _InitHonorLevelOnLoadFromDB(uint32 /*honor*/, uint32 /*honorLevel*/, uint32 /*prestigeLevel*/);
         std::unique_ptr<RestMgr> _restMgr;
 
+        std::vector<PlayerPetData*> PlayerPetDataStore;
         bool _usePvpItemLevels;
 };
 

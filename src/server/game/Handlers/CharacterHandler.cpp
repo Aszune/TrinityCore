@@ -286,6 +286,10 @@ bool LoginQueryHolder::Initialize()
     stmt->setUInt64(0, lowGuid);
     res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_GARRISON_FOLLOWER_ABILITIES, stmt);
 
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHAR_ALL_PETS_DETAIL);
+    stmt->setUInt64(0, lowGuid);
+    res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_ALL_PETS, stmt);
+
     return res;
 }
 
@@ -376,8 +380,7 @@ void WorldSession::HandleCharEnumOpcode(WorldPackets::Character::EnumCharacters&
     else
         stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_ENUM);
 
-    stmt->setUInt8(0, PET_SAVE_AS_CURRENT);
-    stmt->setUInt32(1, GetAccountId());
+    stmt->setUInt32(0, GetAccountId());
 
     _queryProcessor.AddQuery(CharacterDatabase.AsyncQuery(stmt).WithPreparedCallback(std::bind(&WorldSession::HandleCharEnum, this, std::placeholders::_1)));
 }
@@ -418,8 +421,7 @@ void WorldSession::HandleCharUndeleteEnumOpcode(WorldPackets::Character::EnumCha
     else
         stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_UNDELETE_ENUM);
 
-    stmt->setUInt8(0, PET_SAVE_AS_CURRENT);
-    stmt->setUInt32(1, GetAccountId());
+    stmt->setUInt32(0, GetAccountId());
 
     _queryProcessor.AddQuery(CharacterDatabase.AsyncQuery(stmt).WithPreparedCallback(std::bind(&WorldSession::HandleCharUndeleteEnum, this, std::placeholders::_1)));
 }
@@ -1083,6 +1085,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         CharacterDatabase.Execute(stmtSpec);
     }
 
+    pCurrChar->LoadPetsFromDB(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_ALL_PETS));
+
     // Load pet if any (if player not alive and in taxi flight or another then pet will remember as temporary unsummoned)
     pCurrChar->LoadPet();
 
@@ -1117,6 +1121,9 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         for (uint32 spellId : info->castSpells)
             pCurrChar->CastSpell(pCurrChar, spellId, true);
     }
+
+    if (pCurrChar->getClass() == CLASS_HUNTER)
+        pCurrChar->GetSession()->SendStablePet(ObjectGuid::Empty);
 
     // show time before shutdown if shutdown planned.
     if (sWorld->IsShuttingDown())
