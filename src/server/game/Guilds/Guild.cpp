@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -1400,7 +1400,7 @@ void Guild::SendGuildRankInfo(WorldSession* session) const
         rankData.RankID = uint32(rankInfo->GetId());
         rankData.RankOrder = uint32(i);
         rankData.Flags = rankInfo->GetRights();
-        rankData.WithdrawGoldLimit = rankInfo->GetBankMoneyPerDay();
+        rankData.WithdrawGoldLimit = (rankInfo->GetId() == GR_GUILDMASTER ? (-1) : int32(rankInfo->GetBankMoneyPerDay() / GOLD));
         rankData.RankName = rankInfo->GetName();
 
         for (uint8 j = 0; j < GUILD_BANK_MAX_TABS; ++j)
@@ -1605,7 +1605,7 @@ void Guild::HandleSetRankInfo(WorldSession* session, uint8 rankId, std::string c
 
         rankInfo->SetName(name);
         rankInfo->SetRights(rights);
-        _SetRankBankMoneyPerDay(rankId, moneyPerDay);
+        _SetRankBankMoneyPerDay(rankId, moneyPerDay * GOLD);
 
         for (auto itr = rightsAndSlots.begin(); itr != rightsAndSlots.end(); ++itr)
             _SetRankBankTabRightsAndSlots(rankId, *itr);
@@ -2566,12 +2566,12 @@ void Guild::BroadcastToGuild(WorldSession* session, bool officerOnly, std::strin
     }
 }
 
-void Guild::BroadcastAddonToGuild(WorldSession* session, bool officerOnly, std::string const& msg, std::string const& prefix) const
+void Guild::BroadcastAddonToGuild(WorldSession* session, bool officerOnly, std::string const& msg, std::string const& prefix, bool isLogged) const
 {
     if (session && session->GetPlayer() && _HasRankRight(session->GetPlayer(), officerOnly ? GR_RIGHT_OFFCHATSPEAK : GR_RIGHT_GCHATSPEAK))
     {
         WorldPackets::Chat::Chat packet;
-        packet.Initialize(officerOnly ? CHAT_MSG_OFFICER : CHAT_MSG_GUILD, LANG_ADDON, session->GetPlayer(), nullptr, msg, 0, "", DEFAULT_LOCALE, prefix);
+        packet.Initialize(officerOnly ? CHAT_MSG_OFFICER : CHAT_MSG_GUILD, isLogged ? LANG_ADDON_LOGGED : LANG_ADDON, session->GetPlayer(), nullptr, msg, 0, "", DEFAULT_LOCALE, prefix);
         WorldPacket const* data = packet.Write();
         for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
             if (Player* player = itr->second->FindPlayer())
