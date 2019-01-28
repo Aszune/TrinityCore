@@ -876,6 +876,7 @@ struct GameObjectData
     int32 terrainSwapMap;
     uint32 ScriptId;
     bool dbData;
+    float size = 0.0f;
 };
 
 #endif // GameObjectData_h__
