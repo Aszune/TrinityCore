@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -41,6 +41,8 @@ namespace GameTime
 
     /// Uptime (in secs)
     TC_GAME_API uint32 GetUptime();
+
+    TC_GAME_API tm const* GetDateAndTime();
 
     void UpdateGameTimers();
 }

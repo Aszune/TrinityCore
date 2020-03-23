@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,6 +22,7 @@
  */
 
 #include "ScriptMgr.h"
+#include "AzeritePackets.h"
 #include "Battleground.h"
 #include "CreatureAIImpl.h"
 #include "DB2Stores.h"
@@ -1366,7 +1367,7 @@ class spell_item_mingos_fortune_generator : public SpellScriptLoader
                         return;
                 }
 
-                CreateItem(effIndex, newitemid);
+                CreateItem(effIndex, newitemid, ItemContext::NONE);
             }
 
             void Register() override
@@ -4769,6 +4770,40 @@ public:
     }
 };
 
+// 277253 - Heart of Azeroth
+class spell_item_heart_of_azeroth : public AuraScript
+{
+    PrepareAuraScript(spell_item_heart_of_azeroth);
+
+    void SetEquippedFlag(AuraEffect const* /*effect*/, AuraEffectHandleModes /*mode*/)
+    {
+        SetState(true);
+    }
+
+    void ClearEquippedFlag(AuraEffect const* /*effect*/, AuraEffectHandleModes /*mode*/)
+    {
+        SetState(false);
+    }
+
+    void SetState(bool equipped)
+    {
+        if (Player* target = GetTarget()->ToPlayer())
+        {
+            target->ApplyAllAzeriteEmpoweredItemMods(equipped);
+
+            WorldPackets::Azerite::AzeriteEmpoweredItemEquippedStatusChanged statusChanged;
+            statusChanged.IsHeartEquipped = equipped;
+            target->SendDirectMessage(statusChanged.Write());
+        }
+    }
+
+    void Register()
+    {
+        OnEffectApply += AuraEffectApplyFn(spell_item_heart_of_azeroth::SetEquippedFlag, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        OnEffectRemove += AuraEffectRemoveFn(spell_item_heart_of_azeroth::ClearEquippedFlag, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
 void AddSC_item_spell_scripts()
 {
     // 23074 Arcanite Dragonling
@@ -4885,7 +4920,9 @@ void AddSC_item_spell_scripts()
     new spell_item_world_queller_focus();
     new spell_item_water_strider();
     new spell_item_brutal_kinship();
-    
+
     new spell_item_mad_alchemists_potion();
     new spell_item_crazy_alchemists_potion();
+
+    RegisterAuraScript(spell_item_heart_of_azeroth);
 }

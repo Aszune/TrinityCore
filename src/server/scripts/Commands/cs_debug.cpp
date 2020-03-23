@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -43,6 +43,7 @@ EndScriptData */
 #include "RBAC.h"
 #include "SpellPackets.h"
 #include "Transport.h"
+#include "World.h"
 #include "WorldSession.h"
 #include <fstream>
 #include <limits>
@@ -102,6 +103,8 @@ public:
             { "raidreset",     rbac::RBAC_PERM_COMMAND_INSTANCE_UNBIND,     false, &HandleDebugRaidResetCommand,        "" },
             { "neargraveyard", rbac::RBAC_PERM_COMMAND_NEARGRAVEYARD,       false, &HandleDebugNearGraveyard,           "" },
             { "conversation" , rbac::RBAC_PERM_COMMAND_DEBUG_CONVERSATION,  false, &HandleDebugConversationCommand,     "" },
+            { "worldstate" ,   rbac::RBAC_PERM_COMMAND_DEBUG,               false, &HandleDebugWorldStateCommand,       "" },
+            { "wsexpression" , rbac::RBAC_PERM_COMMAND_DEBUG,               false, &HandleDebugWSExpressionCommand,     "" },
         };
         static std::vector<ChatCommand> commandTable =
         {
@@ -1216,15 +1219,17 @@ public:
         if (!mEntry || !mEntry->IsRaid())
             return false;
         int32 difficulty = difficulty_str ? atoi(difficulty_str) : -1;
-        if (difficulty >= MAX_DIFFICULTY || difficulty < -1)
+        if (!sDifficultyStore.HasRecord(difficulty) || difficulty < -1)
             return false;
 
         if (difficulty == -1)
-            for (uint8 diff = 0; diff < MAX_DIFFICULTY; ++diff)
+        {
+            for (DifficultyEntry const* difficulty : sDifficultyStore)
             {
-                if (sDB2Manager.GetMapDifficultyData(map, Difficulty(diff)))
-                    sInstanceSaveMgr->ForceGlobalReset(map, Difficulty(diff));
+                if (sDB2Manager.GetMapDifficultyData(map, Difficulty(difficulty->ID)))
+                    sInstanceSaveMgr->ForceGlobalReset(map, Difficulty(difficulty->ID));
             }
+        }
         else
             sInstanceSaveMgr->ForceGlobalReset(map, Difficulty(difficulty));
         return true;
@@ -1254,23 +1259,24 @@ public:
             float z = player->GetPositionZ();
             float distNearest = std::numeric_limits<float>::max();
 
-            for (uint32 i = 0; i < sWorldSafeLocsStore.GetNumRows(); ++i)
+            for (auto&& kvp : sObjectMgr->GetWorldSafeLocs())
             {
-                WorldSafeLocsEntry const* loc = sWorldSafeLocsStore.LookupEntry(i);
-                if (loc && loc->MapID == player->GetMapId())
+                if (kvp.second.Loc.GetMapId() == player->GetMapId())
                 {
-                    float dist = (loc->Loc.X - x) * (loc->Loc.X - x) + (loc->Loc.Y - y) * (loc->Loc.Y - y) + (loc->Loc.Z - z) * (loc->Loc.Z - z);
+                    float dist = (kvp.second.Loc.GetPositionX() - x) * (kvp.second.Loc.GetPositionX() - x)
+                        + (kvp.second.Loc.GetPositionY() - y) * (kvp.second.Loc.GetPositionY() - y)
+                        + (kvp.second.Loc.GetPositionZ() - z) * (kvp.second.Loc.GetPositionZ() - z);
                     if (dist < distNearest)
                     {
                         distNearest = dist;
-                        nearestLoc = loc;
+                        nearestLoc = &kvp.second;
                     }
                 }
             }
         }
 
         if (nearestLoc)
-            handler->PSendSysMessage(LANG_COMMAND_NEARGRAVEYARD, nearestLoc->ID, nearestLoc->Loc.X, nearestLoc->Loc.Y, nearestLoc->Loc.Z);
+            handler->PSendSysMessage(LANG_COMMAND_NEARGRAVEYARD, nearestLoc->ID, nearestLoc->Loc.GetPositionX(), nearestLoc->Loc.GetPositionY(), nearestLoc->Loc.GetPositionZ());
         else
             handler->PSendSysMessage(LANG_COMMAND_NEARGRAVEYARD_NOTFOUND);
 
@@ -1299,6 +1305,72 @@ public:
 
         return Conversation::CreateConversation(conversationEntry, target, *target, { target->GetGUID() }) != nullptr;
     }
+
+    static bool HandleDebugWorldStateCommand(ChatHandler* handler, char const* args)
+    {
+        if (!*args)
+            return false;
+
+        char const* worldStateIdStr = strtok((char*)args, " ");
+        char const* valueStr = args ? strtok(nullptr, " ") : nullptr;
+
+        if (!worldStateIdStr)
+            return false;
+
+        Player* target = handler->getSelectedPlayerOrSelf();
+
+        if (!target)
+        {
+            handler->SendSysMessage(LANG_PLAYER_NOT_FOUND);
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        uint32 worldStateId = atoi(worldStateIdStr);
+        uint32 value = valueStr ? atoi(valueStr) : 0;
+
+        if (value)
+        {
+            sWorld->setWorldState(worldStateId, value);
+            target->SendUpdateWorldState(worldStateId, value);
+        }
+        else
+            handler->PSendSysMessage("Worldstate %u actual value : %u", worldStateId, sWorld->getWorldState(worldStateId));
+
+        return true;
+    }
+
+    static bool HandleDebugWSExpressionCommand(ChatHandler* handler, char const* args)
+    {
+        if (!*args)
+            return false;
+
+        char const* expressionIdStr = strtok((char*)args, " ");
+
+        if (!expressionIdStr)
+            return false;
+
+        uint32 expressionId = atoi(expressionIdStr);
+        Player* target = handler->getSelectedPlayerOrSelf();
+
+        if (!target)
+        {
+            handler->SendSysMessage(LANG_PLAYER_NOT_FOUND);
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        WorldStateExpressionEntry const* wsExpressionEntry = sWorldStateExpressionStore.LookupEntry(expressionId);
+        if (!wsExpressionEntry)
+            return false;
+
+        if (sConditionMgr->IsPlayerMeetingExpression(target, wsExpressionEntry))
+            handler->PSendSysMessage("Expression %u meet", expressionId);
+        else
+            handler->PSendSysMessage("Expression %u not meet", expressionId);
+
+        return true;
+    };
 };
 
 void AddSC_debug_commandscript()

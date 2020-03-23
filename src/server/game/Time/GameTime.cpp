@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -17,6 +17,7 @@
 
 #include "GameTime.h"
 #include "Timer.h"
+#include "Util.h"
 
 namespace GameTime
 {
@@ -27,6 +28,8 @@ namespace GameTime
 
     std::chrono::system_clock::time_point GameTimeSystemPoint = std::chrono::system_clock::time_point::min();
     std::chrono::steady_clock::time_point GameTimeSteadyPoint = std::chrono::steady_clock::time_point::min();
+
+    tm DateTime;
 
     time_t GetStartTime()
     {
@@ -58,11 +61,17 @@ namespace GameTime
         return uint32(GameTime - StartTime);
     }
 
+    tm const* GetDateAndTime()
+    {
+        return &DateTime;
+    }
+
     void UpdateGameTimers()
     {
         GameTime = time(nullptr);
         GameMSTime = getMSTime();
         GameTimeSystemPoint = std::chrono::system_clock::now();
         GameTimeSteadyPoint = std::chrono::steady_clock::now();
+        localtime_r(&GameTime, &DateTime);
     }
 }

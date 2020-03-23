@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -299,6 +299,10 @@ public:
 private:
     struct StaticData
     {
+        StaticData(SpellTargetObjectTypes objectType, SpellTargetReferenceTypes referenceType, SpellTargetSelectionCategories selectionCategory,
+            SpellTargetCheckTypes checkType, SpellTargetDirectionTypes directionType) : ObjectType(objectType), ReferenceType(referenceType),
+            SelectionCategory(selectionCategory), SelectionCheckType(checkType), DirectionType(directionType) { }
+
         SpellTargetObjectTypes ObjectType;    // type of object returned by target type
         SpellTargetReferenceTypes ReferenceType; // defines which object is used as a reference when selecting target
         SpellTargetSelectionCategories SelectionCategory;
@@ -372,8 +376,8 @@ public:
     bool IsFarDestTargetEffect() const;
     bool IsUnitOwnedAuraEffect() const;
 
-    int32 CalcValue(Unit const* caster = nullptr, int32 const* basePoints = nullptr, Unit const* target = nullptr, float* variance = nullptr, int32 itemLevel = -1) const;
-    int32 CalcBaseValue(Unit const* caster, Unit const* target, int32 itemLevel) const;
+    int32 CalcValue(Unit const* caster = nullptr, int32 const* basePoints = nullptr, Unit const* target = nullptr, float* variance = nullptr, uint32 castItemId = 0, int32 itemLevel = -1) const;
+    int32 CalcBaseValue(Unit const* caster, Unit const* target, uint32 itemId, int32 itemLevel) const;
     float CalcValueMultiplier(Unit* caster, Spell* spell = NULL) const;
     float CalcDamageMultiplier(Unit* caster, Spell* spell = NULL) const;
 
@@ -393,6 +397,9 @@ public:
 private:
     struct StaticData
     {
+        StaticData(SpellEffectImplicitTargetTypes implicitTargetType, SpellTargetObjectTypes usedTargetObjectType)
+            : ImplicitTargetType(implicitTargetType), UsedTargetObjectType(usedTargetObjectType) { }
+
         SpellEffectImplicitTargetTypes ImplicitTargetType; // defines what target can be added to effect target list if there's no valid target type provided for effect
         SpellTargetObjectTypes UsedTargetObjectType; // defines valid target object type for spell effect
     };
@@ -488,6 +495,7 @@ class TC_GAME_API SpellInfo
         uint32 RangeIndex;
         SpellRangeEntry const* RangeEntry;
         float  Speed;
+        float  LaunchDelay;
         uint32 StackAmount;
         uint32 Totem[MAX_SPELL_TOTEMS];
         int32  Reagent[MAX_SPELL_REAGENTS];
@@ -534,6 +542,8 @@ class TC_GAME_API SpellInfo
         bool HasAreaAuraEffect(uint32 difficulty) const;
         bool HasAreaAuraEffect() const;
         bool HasOnlyDamageEffects() const;
+        bool HasTargetType(::Targets target) const;
+        bool HasTargetType(uint32 difficulty, ::Targets target) const;
 
         bool HasAttribute(SpellAttr0 attribute) const { return !!(Attributes & attribute); }
         bool HasAttribute(SpellAttr1 attribute) const { return !!(AttributesEx & attribute); }
@@ -592,6 +602,7 @@ class TC_GAME_API SpellInfo
         bool IsRangedWeaponSpell() const;
         bool IsAutoRepeatRangedSpell() const;
         bool HasInitialAggro() const;
+        bool HasHitDelay() const;
 
         WeaponAttackType GetAttackType() const;
 
