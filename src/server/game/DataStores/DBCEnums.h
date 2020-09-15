@@ -19,6 +19,7 @@
 #define DBCENUMS_H
 
 #include "Define.h"
+#include "EnumFlag.h"
 #include <array>
 
 #pragma pack(push, 1)
@@ -108,7 +109,7 @@ enum AreaFlags
     AREA_FLAG_SNOW                  = 0x00000001,                // snow (only Dun Morogh, Naxxramas, Razorfen Downs and Winterspring)
     AREA_FLAG_UNK1                  = 0x00000002,                // Razorfen Downs, Naxxramas and Acherus: The Ebon Hold (3.3.5a)
     AREA_FLAG_UNK2                  = 0x00000004,                // Only used for areas on map 571 (development before)
-    AREA_FLAG_SLAVE_CAPITAL         = 0x00000008,                // city and city subsones
+    AREA_FLAG_SLAVE_CAPITAL         = 0x00000008,                // city and city subzones
     AREA_FLAG_UNK3                  = 0x00000010,                // can't find common meaning
     AREA_FLAG_SLAVE_CAPITAL2        = 0x00000020,                // slave capital city flag?
     AREA_FLAG_ALLOW_DUELS           = 0x00000040,                // allow to duel here
@@ -206,6 +207,14 @@ enum ChrSpecializationFlag
     CHR_SPECIALIZATION_FLAG_RECOMMENDED             = 0x40,
 };
 
+enum class CorruptionEffectsFlag
+{
+    None        = 0,
+    Disabled    = 0x1
+};
+
+DEFINE_ENUM_FLAG(CorruptionEffectsFlag);
+
 enum CriteriaCondition
 {
     CRITERIA_CONDITION_NONE            = 0,
@@ -213,11 +222,15 @@ enum CriteriaCondition
     CRITERIA_CONDITION_UNK2            = 2,     // only used in "Complete a daily quest every day for five consecutive days"
     CRITERIA_CONDITION_BG_MAP          = 3,     // requires you to be on specific map, reset at change
     CRITERIA_CONDITION_NO_LOSE         = 4,     // only used in "Win 10 arenas without losing"
-    CRITERIA_CONDITION_UNK5            = 5,     // Have spell?
-    CRITERIA_CONDITION_UNK8            = 8,
+    CRITERIA_CONDITION_REMOVE_AURA     = 5,     // reset when this aura is removed
+    CRITERIA_CONDITION_CAST_SPELL      = 8,     // reset when casting this spell
     CRITERIA_CONDITION_NO_SPELL_HIT    = 9,     // requires the player not to be hit by specific spell
     CRITERIA_CONDITION_NOT_IN_GROUP    = 10,    // requires the player not to be in group
-    CRITERIA_CONDITION_UNK13           = 13     // unk
+    CRITERIA_CONDITION_LOSE_PET_BATTLE = 11,    // reset when losing pet battle
+    CRITERIA_CONDITION_UNK13           = 13,    // unk
+    CRITERIA_CONDITION_EVENT           = 14,
+
+    CRITERIA_CONDITION_MAX
 };
 
 enum CriteriaAdditionalCondition
@@ -951,7 +964,8 @@ enum MapFlags
 enum AbilytyLearnType
 {
     SKILL_LINE_ABILITY_LEARNED_ON_SKILL_VALUE  = 1, // Spell state will update depending on skill value
-    SKILL_LINE_ABILITY_LEARNED_ON_SKILL_LEARN  = 2  // Spell will be learned/removed together with entire skill
+    SKILL_LINE_ABILITY_LEARNED_ON_SKILL_LEARN  = 2, // Spell will be learned/removed together with entire skill
+    SKILL_LINE_ABILITY_REWARDED_FROM_QUEST     = 4  // Learned as quest reward, also re-learned if missing
 };
 
 enum GlyphSlotType
@@ -1010,8 +1024,10 @@ enum ItemBonusType
     ITEM_BONUS_RELIC_TYPE                       = 17,
     ITEM_BONUS_OVERRIDE_REQUIRED_LEVEL          = 18,
     ITEM_BONUS_AZERITE_TIER_UNLOCK_SET          = 19,
+    ITEM_BONUS_SCRAPPING_LOOT_ID                = 20,
     ITEM_BONUS_OVERRIDE_CAN_DISENCHANT          = 21,
-    ITEM_BONUS_OVERRIDE_CAN_SCRAP               = 22
+    ITEM_BONUS_OVERRIDE_CAN_SCRAP               = 22,
+    ITEM_BONUS_ITEM_EFFECT_ID                   = 23,
 };
 
 enum class ItemContext : uint8
@@ -1074,6 +1090,7 @@ enum class ItemContext : uint8
     World_Quest_13          = 55,
     PVP_Ranked_Jackpot      = 56,
     Tournament_Realm        = 57,
+    Relinquished            = 58,
 };
 
 enum ItemLimitCategoryMode
@@ -1255,6 +1272,8 @@ enum SpellProcsPerMinuteModType
     SPELL_PPM_MOD_BATTLEGROUND  = 7
 };
 
+constexpr std::size_t MAX_POWERS_PER_SPELL = 4;
+
 enum SpellShapeshiftFormFlags
 {
     SHAPESHIFT_FORM_IS_NOT_A_SHAPESHIFT         = 0x0001,
@@ -1335,7 +1354,8 @@ enum SummonPropFlags
     SUMMON_PROP_FLAG_UNK18           = 0x00020000,
     SUMMON_PROP_FLAG_UNK19           = 0x00040000,
     SUMMON_PROP_FLAG_UNK20           = 0x00080000,
-    SUMMON_PROP_FLAG_UNK21           = 0x00100000           // Totems
+    SUMMON_PROP_FLAG_UNK21           = 0x00100000,          // Totems
+    SUMMON_PROP_FLAG_COMPANION       = 0x00200000
 };
 
 #define MAX_TALENT_TIERS 7

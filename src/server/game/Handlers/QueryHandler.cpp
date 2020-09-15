@@ -30,7 +30,6 @@
 #include "QueryPackets.h"
 #include "Realm.h"
 #include "World.h"
-#include "WorldPacket.h"
 
 void WorldSession::SendNameQueryOpcode(ObjectGuid guid)
 {
@@ -144,7 +143,7 @@ void WorldSession::HandleQueryCorpseLocation(WorldPackets::Query::QueryCorpseLoc
             if (corpseMapEntry->IsDungeon() && corpseMapEntry->CorpseMapID >= 0)
             {
                 // if corpse map have entrance
-                if (Map const* entranceMap = sMapMgr->CreateBaseMap(corpseMapEntry->CorpseMapID))
+                if (Map* entranceMap = sMapMgr->CreateBaseMap(corpseMapEntry->CorpseMapID))
                 {
                     mapID = corpseMapEntry->CorpseMapID;
                     x = corpseMapEntry->Corpse.X;

@@ -52,9 +52,14 @@ class TC_GAME_API Corpse : public WorldObject, public GridObject<Corpse>
         explicit Corpse(CorpseType type = CORPSE_BONES);
         ~Corpse();
 
+    protected:
         void BuildValuesCreate(ByteBuffer* data, Player const* target) const override;
         void BuildValuesUpdate(ByteBuffer* data, Player const* target) const override;
         void ClearUpdateMask(bool remove) override;
+
+    public:
+        void BuildValuesUpdateForPlayerWithMask(UpdateData* data, UF::ObjectData::Mask const& requestedObjectMask,
+            UF::CorpseData::Mask const& requestedCorpseMask, Player const* target) const;
 
         void AddToWorld() override;
         void RemoveFromWorld() override;
@@ -89,7 +94,7 @@ class TC_GAME_API Corpse : public WorldObject, public GridObject<Corpse>
         void SetCustomDisplayOption(uint32 slot, uint8 customDisplayOption) { SetUpdateFieldValue(m_values.ModifyValue(&Corpse::m_corpseData).ModifyValue(&UF::CorpseData::CustomDisplayOption, slot), customDisplayOption); }
 
         time_t const& GetGhostTime() const { return m_time; }
-        void ResetGhostTime() { m_time = time(NULL); }
+        void ResetGhostTime() { m_time = time(nullptr); }
         CorpseType GetType() const { return m_type; }
 
         CellCoord const& GetCellCoord() const { return _cellCoord; }

@@ -1199,6 +1199,23 @@ struct ConversationLineLoadInfo
     }
 };
 
+struct CorruptionEffectsLoadInfo
+{
+    static DB2LoadInfo const* Instance()
+    {
+        static DB2FieldMeta const fields[] =
+        {
+            { false, FT_INT, "ID" },
+            { false, FT_FLOAT, "MinCorruption" },
+            { true, FT_INT, "Aura" },
+            { true, FT_INT, "PlayerConditionID" },
+            { true, FT_INT, "Flags" },
+        };
+        static DB2LoadInfo const loadInfo(&fields[0], std::extent<decltype(fields)>::value, CorruptionEffectsMeta::Instance(), HOTFIX_SEL_CORRUPTION_EFFECTS);
+        return &loadInfo;
+    }
+};
+
 struct CreatureDisplayInfoLoadInfo
 {
     static DB2LoadInfo const* Instance()
@@ -2844,6 +2861,21 @@ struct ItemModifiedAppearanceLoadInfo
             { true, FT_BYTE, "TransmogSourceTypeEnum" },
         };
         static DB2LoadInfo const loadInfo(&fields[0], std::extent<decltype(fields)>::value, ItemModifiedAppearanceMeta::Instance(), HOTFIX_SEL_ITEM_MODIFIED_APPEARANCE);
+        return &loadInfo;
+    }
+};
+
+struct ItemNameDescriptionLoadInfo
+{
+    static DB2LoadInfo const* Instance()
+    {
+        static DB2FieldMeta const fields[] =
+        {
+            { false, FT_INT, "ID" },
+            { false, FT_STRING, "Description" },
+            { true, FT_INT, "Color" },
+        };
+        static DB2LoadInfo const loadInfo(&fields[0], std::extent<decltype(fields)>::value, ItemNameDescriptionMeta::Instance(), HOTFIX_SEL_ITEM_NAME_DESCRIPTION);
         return &loadInfo;
     }
 };

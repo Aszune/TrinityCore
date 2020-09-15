@@ -38,9 +38,14 @@ class TC_GAME_API DynamicObject : public WorldObject, public GridObject<DynamicO
         DynamicObject(bool isWorldObject);
         ~DynamicObject();
 
+    protected:
         void BuildValuesCreate(ByteBuffer* data, Player const* target) const override;
         void BuildValuesUpdate(ByteBuffer* data, Player const* target) const override;
         void ClearUpdateMask(bool remove) override;
+
+    public:
+        void BuildValuesUpdateForPlayerWithMask(UpdateData* data, UF::ObjectData::Mask const& requestedObjectMask,
+            UF::DynamicObjectData::Mask const& requestedDynamicObjectMask, Player const* target) const;
 
         void AddToWorld() override;
         void RemoveFromWorld() override;
@@ -58,7 +63,7 @@ class TC_GAME_API DynamicObject : public WorldObject, public GridObject<DynamicO
         Unit* GetCaster() const { return _caster; }
         void BindToCaster();
         void UnbindFromCaster();
-        uint32 GetSpellId() const {  return m_dynamicObjectData->SpellID; }
+        uint32 GetSpellId() const { return m_dynamicObjectData->SpellID; }
         SpellInfo const* GetSpellInfo() const;
         ObjectGuid GetCasterGUID() const { return m_dynamicObjectData->Caster; }
         float GetRadius() const { return m_dynamicObjectData->Radius; }

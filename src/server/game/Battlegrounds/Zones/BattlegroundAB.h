@@ -311,7 +311,7 @@ struct BattlegroundABScore final : public BattlegroundScore
 class BattlegroundAB : public Battleground
 {
     public:
-        BattlegroundAB();
+        BattlegroundAB(BattlegroundTemplate const* battlegroundTemplate);
         ~BattlegroundAB();
 
         void AddPlayer(Player* player) override;
@@ -322,7 +322,7 @@ class BattlegroundAB : public Battleground
         bool SetupBattleground() override;
         void Reset() override;
         void EndBattleground(uint32 winner) override;
-        WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
+        WorldSafeLocsEntry const* GetClosestGraveyard(Player* player) override;
         WorldSafeLocsEntry const* GetExploitTeleportLocation(Team team) override;
 
         /* Scorekeeping */

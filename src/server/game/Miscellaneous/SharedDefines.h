@@ -127,90 +127,6 @@ enum Gender
     GENDER_NONE                        =  2
 };
 
-// ChrRaces.db2 (8.0.1.27075)
-enum Races
-{
-    RACE_NONE                   = 0,
-    RACE_HUMAN                  = 1,
-    RACE_ORC                    = 2,
-    RACE_DWARF                  = 3,
-    RACE_NIGHTELF               = 4,
-    RACE_UNDEAD_PLAYER          = 5,
-    RACE_TAUREN                 = 6,
-    RACE_GNOME                  = 7,
-    RACE_TROLL                  = 8,
-    RACE_GOBLIN                 = 9,
-    RACE_BLOODELF               = 10,
-    RACE_DRAENEI                = 11,
-    //RACE_FEL_ORC            = 12,
-    //RACE_NAGA               = 13,
-    //RACE_BROKEN             = 14,
-    //RACE_SKELETON           = 15,
-    //RACE_VRYKUL             = 16,
-    //RACE_TUSKARR            = 17,
-    //RACE_FOREST_TROLL       = 18,
-    //RACE_TAUNKA             = 19,
-    //RACE_NORTHREND_SKELETON = 20,
-    //RACE_ICE_TROLL          = 21,
-    RACE_WORGEN                 = 22,
-    //RACE_GILNEAN            = 23,
-    RACE_PANDAREN_NEUTRAL       = 24,
-    RACE_PANDAREN_ALLIANCE      = 25,
-    RACE_PANDAREN_HORDE         = 26,
-    RACE_NIGHTBORNE             = 27,
-    RACE_HIGHMOUNTAIN_TAUREN    = 28,
-    RACE_VOID_ELF               = 29,
-    RACE_LIGHTFORGED_DRAENEI    = 30,
-    //RACE_ZANDALARI_TROLL    = 31,
-    //RACE_KUL_TIRAN          = 32,
-    //RACE_THIN_HUMAN         = 33,
-    RACE_DARK_IRON_DWARF        = 34,
-    //RACE_VULPERA            = 35,
-    RACE_MAGHAR_ORC             = 36
-};
-
-// max+1 for player race
-#define MAX_RACES         37
-
-#define RACEMASK_ALL_PLAYABLE                     \
-    ((UI64LIT(1)<<(RACE_HUMAN-1))               | \
-     (UI64LIT(1)<<(RACE_ORC-1))                 | \
-     (UI64LIT(1)<<(RACE_DWARF-1))               | \
-     (UI64LIT(1)<<(RACE_NIGHTELF-1))            | \
-     (UI64LIT(1)<<(RACE_UNDEAD_PLAYER-1))       | \
-     (UI64LIT(1)<<(RACE_TAUREN-1))              | \
-     (UI64LIT(1)<<(RACE_GNOME-1))               | \
-     (UI64LIT(1)<<(RACE_TROLL-1))               | \
-     (UI64LIT(1)<<(RACE_BLOODELF-1))            | \
-     (UI64LIT(1)<<(RACE_DRAENEI-1))             | \
-     (UI64LIT(1)<<(RACE_GOBLIN-1))              | \
-     (UI64LIT(1)<<(RACE_WORGEN-1))              | \
-     (UI64LIT(1)<<(RACE_PANDAREN_NEUTRAL-1))    | \
-     (UI64LIT(1)<<(RACE_PANDAREN_ALLIANCE-1))   | \
-     (UI64LIT(1)<<(RACE_PANDAREN_HORDE-1))      | \
-     (UI64LIT(1)<<(RACE_NIGHTBORNE-1))          | \
-     (UI64LIT(1)<<(RACE_HIGHMOUNTAIN_TAUREN-1)) | \
-     (UI64LIT(1)<<(RACE_VOID_ELF-1))            | \
-     (UI64LIT(1)<<(RACE_LIGHTFORGED_DRAENEI-1)) | \
-     (UI64LIT(1)<<(RACE_DARK_IRON_DWARF-1))     | \
-     (UI64LIT(1)<<(RACE_MAGHAR_ORC-1)))
-
-#define RACEMASK_NEUTRAL (UI64LIT(1)<<(RACE_PANDAREN_NEUTRAL-1))
-
-#define RACEMASK_ALLIANCE                         \
-    ((UI64LIT(1)<<(RACE_HUMAN-1))               | \
-     (UI64LIT(1)<<(RACE_DWARF-1))               | \
-     (UI64LIT(1)<<(RACE_NIGHTELF-1))            | \
-     (UI64LIT(1)<<(RACE_GNOME-1))               | \
-     (UI64LIT(1)<<(RACE_DRAENEI-1))             | \
-     (UI64LIT(1)<<(RACE_WORGEN-1))              | \
-     (UI64LIT(1)<<(RACE_PANDAREN_ALLIANCE-1))   | \
-     (UI64LIT(1)<<(RACE_VOID_ELF-1))            | \
-     (UI64LIT(1)<<(RACE_LIGHTFORGED_DRAENEI-1)) | \
-     (UI64LIT(1)<<(RACE_DARK_IRON_DWARF-1)))
-
-#define RACEMASK_HORDE (RACEMASK_ALL_PLAYABLE & ~RACEMASK_ALLIANCE)
-
 // Class value is index in ChrClasses.dbc
 enum Classes : uint8
 {
@@ -271,6 +187,51 @@ enum ReputationRank
     REP_HONORED     = 5,
     REP_REVERED     = 6,
     REP_EXALTED     = 7
+};
+
+enum FactionTemplates
+{
+    FACTION_NONE                        = 0,
+    FACTION_CREATURE                    = 7,
+    FACTION_ESCORTEE_A_NEUTRAL_PASSIVE  = 10,
+    FACTION_MONSTER                     = 14,
+    FACTION_MONSTER_2                   = 16,
+    FACTION_TROLL_BLOODSCALP            = 28,
+    FACTION_PREY                        = 31,
+    FACTION_ESCORTEE_H_NEUTRAL_PASSIVE  = 33,
+    FACTION_FRIENDLY                    = 35,
+    FACTION_OGRE                        = 45,
+    FACTION_ORC_DRAGONMAW               = 62,
+    FACTION_HORDE_GENERIC               = 83,
+    FACTION_ALLIANCE_GENERIC            = 84,
+    FACTION_DEMON                       = 90,
+    FACTION_ELEMENTAL                   = 91,
+    FACTION_DRAGONFLIGHT_BLACK          = 103,
+    FACTION_ESCORTEE_N_NEUTRAL_PASSIVE  = 113,
+    FACTION_ENEMY                       = 168,
+    FACTION_ESCORTEE_A_NEUTRAL_ACTIVE   = 231,
+    FACTION_ESCORTEE_H_NEUTRAL_ACTIVE   = 232,
+    FACTION_ESCORTEE_N_NEUTRAL_ACTIVE   = 250,
+    FACTION_ESCORTEE_N_FRIEND_PASSIVE   = 290,
+    FACTION_TITAN                       = 415,
+    FACTION_ESCORTEE_N_FRIEND_ACTIVE    = 495,
+    FACTION_GOBLIN_DARK_IRON_BAR_PATRON = 736,
+    FACTION_DARK_IRON_DWARVES           = 754,
+    FACTION_ESCORTEE_A_PASSIVE          = 774,
+    FACTION_ESCORTEE_H_PASSIVE          = 775,
+    FACTION_UNDEAD_SCOURGE              = 974,
+    FACTION_EARTHEN_RING                = 1726,
+    FACTION_ALLIANCE_GENERIC_WG         = 1732,
+    FACTION_HORDE_GENERIC_WG            = 1735,
+    FACTION_ARAKKOA                     = 1738,
+    FACTION_ASHTONGUE_DEATHSWORN        = 1820,
+    FACTION_FLAYER_HUNTER               = 1840,
+    FACTION_MONSTER_SPAR_BUDDY          = 1868,
+    FACTION_ESCORTEE_N_ACTIVE           = 1986,
+    FACTION_ESCORTEE_H_ACTIVE           = 2046,
+    FACTION_UNDEAD_SCOURGE_2            = 2068,
+    FACTION_UNDEAD_SCOURGE_3            = 2084,
+    FACTION_SCARLET_CRUSADE             = 2089
 };
 
 #define MIN_REPUTATION_RANK (REP_HATED)
@@ -2386,21 +2347,21 @@ enum Targets
     TARGET_UNK_115                     = 115,
     TARGET_UNK_116                     = 116,
     TARGET_UNK_117                     = 117,
-    TARGET_UNK_118                     = 118,
-    TARGET_UNK_119                     = 119,
-    TARGET_UNK_120                     = 120,
+    TARGET_UNIT_TARGET_ALLY_OR_RAID    = 118, // If target is in your party or raid, all party and raid members will be affected
+    TARGET_CORPSE_SRC_AREA_RAID        = 119,
+    TARGET_UNIT_CASTER_AND_SUMMONS     = 120,
     TARGET_UNK_121                     = 121,
-    TARGET_UNK_122                     = 122,
-    TARGET_UNK_123                     = 123,
+    TARGET_UNIT_AREA_THREAT_LIST       = 122, // any unit on threat list
+    TARGET_UNIT_AREA_TAP_LIST          = 123,
     TARGET_UNK_124                     = 124,
-    TARGET_UNK_125                     = 125,
+    TARGET_DEST_CASTER_GROUND          = 125,
     TARGET_UNK_126                     = 126,
     TARGET_UNK_127                     = 127,
     TARGET_UNK_128                     = 128,
     TARGET_UNIT_CONE_ENTRY_129         = 129,
     TARGET_UNK_130                     = 130,
-    TARGET_UNK_131                     = 131,
-    TARGET_UNK_132                     = 132,
+    TARGET_DEST_SUMMONER               = 131,
+    TARGET_DEST_TARGET_ALLY            = 132,
     TARGET_UNK_133                     = 133,
     TARGET_UNK_134                     = 134,
     TARGET_UNK_135                     = 135,
@@ -4936,22 +4897,51 @@ enum SummonCategory
                                      // uses this category
 };
 
-enum SummonType
+enum class SummonTitle : int32
 {
-    SUMMON_TYPE_NONE        = 0,
-    SUMMON_TYPE_PET         = 1,
-    SUMMON_TYPE_GUARDIAN    = 2,
-    SUMMON_TYPE_MINION      = 3,
-    SUMMON_TYPE_TOTEM       = 4,
-    SUMMON_TYPE_MINIPET     = 5,
-    SUMMON_TYPE_GUARDIAN2   = 6,
-    SUMMON_TYPE_WILD2       = 7,
-    SUMMON_TYPE_WILD3       = 8,    // Related to phases and DK prequest line (3.3.5a)
-    SUMMON_TYPE_VEHICLE     = 9,
-    SUMMON_TYPE_VEHICLE2    = 10,   // Oculus and Argent Tournament vehicles (3.3.5a)
-    SUMMON_TYPE_LIGHTWELL   = 11,
-    SUMMON_TYPE_JEEVES      = 12,
-    SUMMON_TYPE_UNK13       = 13
+    None                = 0,
+    Pet                 = 1,
+    Guardian            = 2,
+    Minion              = 3,
+    Totem               = 4,
+    Companion           = 5,
+    Runeblade           = 6,
+    Construct           = 7,
+    Opponent            = 8,    // Related to phases and DK prequest line (3.3.5a)
+    Vehicle             = 9,
+    Mount               = 10,   // Oculus and Argent Tournament vehicles (3.3.5a)
+    Lightwell           = 11,
+    Butler              = 12,
+    aka                 = 13,
+    Gateway             = 14,
+    Hatred              = 15,
+    Statue              = 16,
+    Spirit              = 17,
+    WarBanner           = 18,
+    Heartwarmer         = 19,
+    HiredBy             = 20,
+    PurchasedBy         = 21,
+    Pride               = 22,
+    TwistedImage        = 23,
+    NoodleCart          = 24,
+    InnerDemon          = 25,
+    Bodyguard           = 26,
+    Name                = 27,
+    Squire              = 28,
+    Champion            = 29,
+    TheBetrayer         = 30,
+    EruptingReflection  = 31,
+    HopelessReflection  = 32,
+    MalignantReflection = 33,
+    WailingReflection   = 34,
+    Assistant           = 35,
+    Enforcer            = 36,
+    Recruit             = 37,
+    Admirer             = 38,
+    EvilTwin            = 39,
+    Greed               = 40,
+    LostMind            = 41,
+    ServantOfNZoth      = 44
 };
 
 enum EventId
@@ -5111,7 +5101,7 @@ enum BattlegroundTeamId : uint8
 
 #define BG_TEAMS_COUNT  2
 
-// indexes of BattlemasterList.dbc (7.1.5.23360)
+// indexes of BattlemasterList.dbc
 enum BattlegroundTypeId : uint32
 {
     BATTLEGROUND_TYPE_NONE      = 0,   // None
@@ -5146,6 +5136,7 @@ enum BattlegroundTypeId : uint32
     // 809 = "New Nagrand Arena (Legion)"
     BATTLEGROUND_AF             = 816, // Ashamane's Fall
     // 844 = "New Blade's Edge Arena (Legion)"
+    BATTLEGROUND_RANDOM_EPIC    = 901
 };
 
 #define MAX_BATTLEGROUND_TYPE_ID 845
@@ -5294,24 +5285,53 @@ enum DuelCompleteType : uint8
     DUEL_FLED        = 2
 };
 
-// handle the queue types and bg types separately to enable joining queue for different sized arenas at the same time
-enum BattlegroundQueueTypeId
+struct BattlegroundQueueTypeId
 {
-    BATTLEGROUND_QUEUE_NONE     = 0,
-    BATTLEGROUND_QUEUE_AV       = 1,
-    BATTLEGROUND_QUEUE_WS       = 2,
-    BATTLEGROUND_QUEUE_AB       = 3,
-    BATTLEGROUND_QUEUE_EY       = 4,
-    BATTLEGROUND_QUEUE_SA       = 5,
-    BATTLEGROUND_QUEUE_IC       = 6,
-    BATTLEGROUND_QUEUE_TP       = 7,
-    BATTLEGROUND_QUEUE_BFG      = 8,
-    BATTLEGROUND_QUEUE_RB       = 9,
-    BATTLEGROUND_QUEUE_2v2      = 10,
-    BATTLEGROUND_QUEUE_3v3      = 11,
-    BATTLEGROUND_QUEUE_5v5      = 12,
-    MAX_BATTLEGROUND_QUEUE_TYPES
+    uint16 BattlemasterListId;
+    uint8 Type;
+    bool Rated;
+    uint8 TeamSize;
+
+    static constexpr BattlegroundQueueTypeId FromPacked(uint64 packedQueueId)
+    {
+        return { uint16(packedQueueId & 0xFFFF), uint8((packedQueueId >> 16) & 0xF), ((packedQueueId >> 20) & 1) != 0, uint8((packedQueueId >> 24) & 0x3F) };
+    }
+
+    constexpr uint64 GetPacked() const
+    {
+        return uint64(BattlemasterListId)
+            | (uint64(Type & 0xF) << 16)
+            | (uint64(Rated ? 1 : 0) << 20)
+            | (uint64(TeamSize & 0x3F) << 24)
+            | UI64LIT(0x1F10000000000000);
+    }
+
+    constexpr bool operator==(BattlegroundQueueTypeId right) const
+    {
+        return BattlemasterListId == right.BattlemasterListId
+            && Type == right.Type
+            && Rated == right.Rated
+            && TeamSize == right.TeamSize;
+    }
+
+    constexpr bool operator!=(BattlegroundQueueTypeId right) const
+    {
+        return !(*this == right);
+    }
+
+    constexpr bool operator<(BattlegroundQueueTypeId right) const
+    {
+        if (BattlemasterListId != right.BattlemasterListId)
+            return BattlemasterListId < right.BattlemasterListId;
+        if (Type != right.Type)
+            return Type < right.Type;
+        if (Rated != right.Rated)
+            return Rated < right.Rated;
+        return TeamSize < right.TeamSize;
+    }
 };
+
+constexpr BattlegroundQueueTypeId BATTLEGROUND_QUEUE_NONE = { 0, 0, false, 0 };
 
 enum GroupJoinBattlegroundResult
 {
@@ -5445,6 +5465,33 @@ enum DiminishingLevels
     DIMINISHING_LEVEL_IMMUNE        = 3,
     DIMINISHING_LEVEL_4             = 3,
     DIMINISHING_LEVEL_TAUNT_IMMUNE  = 4
+};
+
+enum WeaponAttackType : uint8
+{
+    BASE_ATTACK   = 0,
+    OFF_ATTACK    = 1,
+    RANGED_ATTACK = 2,
+    MAX_ATTACK
+};
+
+enum CharterTypes
+{
+    CHARTER_TYPE_NONE           = 0,
+    CHARTER_TYPE_ANY            = 10,
+
+    GUILD_CHARTER_TYPE          = 4,
+    ARENA_TEAM_CHARTER_2v2_TYPE = 2,
+    ARENA_TEAM_CHARTER_3v3_TYPE = 3,
+    ARENA_TEAM_CHARTER_5v5_TYPE = 5
+};
+
+enum LineOfSightChecks : uint8
+{
+    LINEOFSIGHT_CHECK_VMAP      = 0x1, // check static floor layout data
+    LINEOFSIGHT_CHECK_GOBJECT   = 0x2, // check dynamic game object data
+
+    LINEOFSIGHT_ALL_CHECKS      = (LINEOFSIGHT_CHECK_VMAP | LINEOFSIGHT_CHECK_GOBJECT)
 };
 
 enum TokenResult
@@ -6561,6 +6608,21 @@ enum class GameError : uint32
     ERR_ITEM_INTERACTION_NOT_ENOUGH_CURRENCY                        = 1045,
     ERR_CANT_USE_PROFANITY                                          = 1046,
     ERR_NOT_IN_PET_BATTLE                                           = 1047,
+};
+
+enum class MountResult : uint32
+{
+    InvalidMountee = 0,
+    TooFarAway     = 1,
+    AlreadyMounted = 2,
+    NotMountable   = 3,
+    NotYourPet     = 4,
+    Other          = 5,
+    Looting        = 6,
+    RaceCantMount  = 7,
+    Shapeshifted   = 8,
+    ForcedDismount = 9,
+    Ok             = 10 // never sent
 };
 
 #endif

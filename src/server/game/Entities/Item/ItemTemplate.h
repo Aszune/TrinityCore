@@ -44,8 +44,8 @@ enum ItemModType
     ITEM_MOD_CRIT_MELEE_RATING        = 19,
     ITEM_MOD_CRIT_RANGED_RATING       = 20,
     ITEM_MOD_CRIT_SPELL_RATING        = 21,
-    ITEM_MOD_HIT_TAKEN_MELEE_RATING   = 22,
-    ITEM_MOD_HIT_TAKEN_RANGED_RATING  = 23,
+    ITEM_MOD_CORRUPTION               = 22,
+    ITEM_MOD_CORRUPTION_RESISTANCE    = 23,
     ITEM_MOD_HIT_TAKEN_SPELL_RATING   = 24,
     ITEM_MOD_CRIT_TAKEN_MELEE_RATING  = 25,
     ITEM_MOD_CRIT_TAKEN_RANGED_RATING = 26,
@@ -80,15 +80,15 @@ enum ItemModType
     ITEM_MOD_NATURE_RESISTANCE        = 55,
     ITEM_MOD_ARCANE_RESISTANCE        = 56,
     ITEM_MOD_PVP_POWER                = 57,
-    ITEM_MOD_CR_AMPLIFY               = 58,
-    ITEM_MOD_CR_MULTISTRIKE           = 59,
-    ITEM_MOD_CR_READINESS             = 60,
+    ITEM_MOD_CR_UNUSED_0              = 58,
+    ITEM_MOD_CR_UNUSED_1              = 59,
+    ITEM_MOD_CR_UNUSED_3              = 60,
     ITEM_MOD_CR_SPEED                 = 61,
     ITEM_MOD_CR_LIFESTEAL             = 62,
     ITEM_MOD_CR_AVOIDANCE             = 63,
     ITEM_MOD_CR_STURDINESS            = 64,
     ITEM_MOD_CR_UNUSED_7              = 65,
-    ITEM_MOD_CR_CLEAVE                = 66,
+    ITEM_MOD_CR_UNUSED_27             = 66,
     ITEM_MOD_CR_UNUSED_9              = 67,
     ITEM_MOD_CR_UNUSED_10             = 68,
     ITEM_MOD_CR_UNUSED_11             = 69,
@@ -651,9 +651,9 @@ enum ItemSubclassPermanent
 
 enum ItemSubclassJunk
 {
-    ITEM_SUBCLASS_MISCELLANEOUS_JUNK                 = 0,
+    ITEM_SUBCLASS_MISCELLANEOUS_JUNK            = 0,
     ITEM_SUBCLASS_MISCELLANEOUS_REAGENT         = 1,
-    ITEM_SUBCLASS_MISCELLANEOUS_COMPANION_PET             = 2,
+    ITEM_SUBCLASS_MISCELLANEOUS_COMPANION_PET   = 2,
     ITEM_SUBCLASS_MISCELLANEOUS_HOLIDAY         = 3,
     ITEM_SUBCLASS_MISCELLANEOUS_OTHER           = 4,
     ITEM_SUBCLASS_MISCELLANEOUS_MOUNT           = 5,
@@ -747,7 +747,7 @@ struct TC_GAME_API ItemTemplate
     uint32 GetSellPrice() const { return ExtendedData->SellPrice; }
     InventoryType GetInventoryType() const { return InventoryType(ExtendedData->InventoryType); }
     int32 GetAllowableClass() const { return ExtendedData->AllowableClass; }
-    int64 GetAllowableRace() const { return ExtendedData->AllowableRace; }
+    Trinity::RaceMask<int64> GetAllowableRace() const { return ExtendedData->AllowableRace; }
     uint32 GetBaseItemLevel() const { return ExtendedData->ItemLevel; }
     int32 GetBaseRequiredLevel() const { return ExtendedData->RequiredLevel; }
     uint32 GetRequiredSkill() const { return ExtendedData->RequiredSkill; }
@@ -826,6 +826,7 @@ struct TC_GAME_API ItemTemplate
 
     char const* GetDefaultLocaleName() const;
     uint32 GetArmor(uint32 itemLevel) const;
+    float GetDPS(uint32 itemLevel) const;
     void GetDamage(uint32 itemLevel, float& minDamage, float& maxDamage) const;
     bool IsUsableByLootSpecialization(Player const* player, bool alwaysAllowBoundToAccount) const;
     static std::size_t CalculateItemSpecBit(ChrSpecializationEntry const* spec);
