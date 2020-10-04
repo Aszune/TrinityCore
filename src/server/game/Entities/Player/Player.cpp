@@ -7189,27 +7189,7 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
 
     GetMap()->SendZoneDynamicInfo(newZone, this);
 
-    // in PvP, any not controlled zone (except zone->team == 6, default case)
-    // in PvE, only opposition team capital
-    switch (zone->FactionGroupMask)
-    {
-        case AREATEAM_ALLY:
-            pvpInfo.IsInHostileArea = GetTeam() != ALLIANCE && (sWorld->IsPvPRealm() || zone->Flags[0] & AREA_FLAG_CAPITAL);
-            break;
-        case AREATEAM_HORDE:
-            pvpInfo.IsInHostileArea = GetTeam() != HORDE && (sWorld->IsPvPRealm() || zone->Flags[0] & AREA_FLAG_CAPITAL);
-            break;
-        case AREATEAM_NONE:
-            // overwrite for battlegrounds, maybe batter some zone flags but current known not 100% fit to this
-            pvpInfo.IsInHostileArea = sWorld->IsPvPRealm() || InBattleground() || zone->Flags[0] & AREA_FLAG_WINTERGRASP;
-            break;
-        default:                                            // 6 in fact
-            pvpInfo.IsInHostileArea = false;
-            break;
-    }
-
-    // Treat players having a quest flagging for PvP as always in hostile area
-    pvpInfo.IsHostile = pvpInfo.IsInHostileArea || HasPvPForcingQuest();
+    UpdateHostileAreaState(zone);
 
     if (zone->Flags[0] & AREA_FLAG_CAPITAL) // Is in a capital city
     {
@@ -7245,6 +7225,60 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
         if (Guild* guild = GetGuild())
             guild->UpdateMemberData(this, GUILD_MEMBER_DATA_ZONEID, newZone);
     }
+}
+
+void Player::UpdateHostileAreaState(AreaTableEntry const* area)
+{
+    ZonePVPTypeOverride overrideZonePvpType = GetOverrideZonePVPType();
+
+    pvpInfo.IsInHostileArea = false;
+
+    if (area->IsSanctuary()) // sanctuary and arena cannot be overriden
+        pvpInfo.IsInHostileArea = false;
+    else if (area->Flags[0] & AREA_FLAG_ARENA)
+        pvpInfo.IsInHostileArea = true;
+    else if (overrideZonePvpType == ZonePVPTypeOverride::None)
+    {
+        if (area)
+        {
+            if (InBattleground() || area->Flags[0] & AREA_FLAG_COMBAT || (area->PvpCombatWorldStateID != -1 && sWorld->getWorldState(area->PvpCombatWorldStateID) != 0))
+                pvpInfo.IsInHostileArea = true;
+            else if (sWorld->IsPvPRealm() || (area->Flags[0] & AREA_FLAG_UNK3))
+            {
+                if (area->Flags[0] & AREA_FLAG_CONTESTED_AREA)
+                    pvpInfo.IsInHostileArea = sWorld->IsPvPRealm();
+                else
+                {
+                    FactionTemplateEntry const* factionTemplate = GetFactionTemplateEntry();
+                    if (!factionTemplate || factionTemplate->FriendGroup & area->FactionGroupMask)
+                        pvpInfo.IsInHostileArea = false;
+                    else if (factionTemplate->EnemyGroup & area->FactionGroupMask)
+                        pvpInfo.IsInHostileArea = true;
+                    else
+                        pvpInfo.IsInHostileArea = sWorld->IsPvPRealm();
+                }
+            }
+        }
+    }
+    else
+    {
+        switch (overrideZonePvpType)
+        {
+            case ZonePVPTypeOverride::Friendly:
+                pvpInfo.IsInHostileArea = false;
+                break;
+            case ZonePVPTypeOverride::Hostile:
+            case ZonePVPTypeOverride::Contested:
+            case ZonePVPTypeOverride::Combat:
+                pvpInfo.IsInHostileArea = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Treat players having a quest flagging for PvP as always in hostile area
+    pvpInfo.IsHostile = pvpInfo.IsInHostileArea || HasPvPForcingQuest();
 }
 
 //If players are too far away from the duel flag... they lose the duel
@@ -10304,7 +10338,7 @@ void Player::SetInventorySlotCount(uint8 slots)
 
             CharacterDatabase.CommitTransaction(trans);
 
-            SendDirectMessage(WorldPackets::Item::CharacterInventoryOverflowWarning().Write());
+            SendDirectMessage(WorldPackets::Item::InventoryFullOverflow().Write());
         }
     }
 
@@ -24078,10 +24112,10 @@ void Player::SendInitialPacketsBeforeAddToMap()
     SendDirectMessage(mountUpdate.Write());
 
     // SMSG_ACCOUNT_TOYS_UPDATE
-    WorldPackets::Toy::AccountToysUpdate toysUpdate;
-    toysUpdate.IsFullUpdate = true;
-    toysUpdate.Toys = &GetSession()->GetCollectionMgr()->GetAccountToys();
-    SendDirectMessage(toysUpdate.Write());
+    WorldPackets::Toy::AccountToyUpdate toyUpdate;
+    toyUpdate.IsFullUpdate = true;
+    toyUpdate.Toys = &GetSession()->GetCollectionMgr()->GetAccountToys();
+    SendDirectMessage(toyUpdate.Write());
 
     // SMSG_ACCOUNT_HEIRLOOM_UPDATE
     WorldPackets::Misc::AccountHeirloomUpdate heirloomUpdate;
