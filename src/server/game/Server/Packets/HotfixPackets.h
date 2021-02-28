@@ -47,14 +47,14 @@ namespace WorldPackets
         class DBReply final : public ServerPacket
         {
         public:
-            DBReply() : ServerPacket(SMSG_DB_REPLY, 12) { }
+            DBReply() : ServerPacket(SMSG_DB_REPLY, 4 + 4 + 4 + 1 + 4) { }
 
             WorldPacket const* Write() override;
 
             uint32 TableHash = 0;
             uint32 Timestamp = 0;
             uint32 RecordID = 0;
-            bool Allow = false;
+            uint8 Status = 3;
             ByteBuffer Data;
         };
 
@@ -89,7 +89,7 @@ namespace WorldPackets
             struct HotfixData
             {
                 DB2Manager::HotfixRecord Record;
-                Optional<uint32> Size;
+                uint32 Size = 0;
             };
 
             HotfixConnect() : ServerPacket(SMSG_HOTFIX_CONNECT) { }

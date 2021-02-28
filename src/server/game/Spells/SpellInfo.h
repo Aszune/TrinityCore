@@ -353,6 +353,7 @@ public:
     flag128   SpellClassMask;
     float     BonusCoefficientFromAP;
     std::vector<Condition*>* ImplicitTargetConditions;
+    EnumFlag<SpellEffectAttributes> EffectAttributes;
     // SpellScalingEntry
     struct ScalingInfo
     {
@@ -364,7 +365,8 @@ public:
     SpellEffectInfo() : _spellInfo(nullptr), EffectIndex(0), Effect(0), ApplyAuraName(0), ApplyAuraPeriod(0),
                         RealPointsPerLevel(0), BasePoints(0), PointsPerResource(0), Amplitude(0), ChainAmplitude(0),
                         BonusCoefficient(0), MiscValue(0), MiscValueB(0), Mechanic(MECHANIC_NONE), PositionFacing(0),
-                        RadiusEntry(nullptr), ChainTargets(0), ItemType(0), TriggerSpell(0), BonusCoefficientFromAP(0.0f), ImplicitTargetConditions(nullptr) { }
+                        RadiusEntry(nullptr), ChainTargets(0), ItemType(0), TriggerSpell(0), BonusCoefficientFromAP(0.0f),
+                        ImplicitTargetConditions(nullptr), EffectAttributes(SpellEffectAttributes::None) { }
     SpellEffectInfo(SpellInfo const* spellInfo, SpellEffectEntry const* effect);
 
     bool IsEffect() const;
@@ -456,6 +458,7 @@ class TC_GAME_API SpellInfo
         uint32 AttributesEx11;
         uint32 AttributesEx12;
         uint32 AttributesEx13;
+        uint32 AttributesEx14;
         uint32 AttributesCu;
         std::bitset<MAX_SPELL_EFFECTS> NegativeEffects;
         uint64 Stances;
@@ -506,6 +509,7 @@ class TC_GAME_API SpellInfo
         uint32 IconFileDataId;
         uint32 ActiveIconFileDataId;
         uint32 ContentTuningId;
+        uint32 ShowFutureSpellPlayerConditionID;
         LocalizedString const* SpellName;
         float ConeAngle;
         float Width;
@@ -555,6 +559,7 @@ class TC_GAME_API SpellInfo
         bool HasAttribute(SpellAttr11 attribute) const { return !!(AttributesEx11 & attribute); }
         bool HasAttribute(SpellAttr12 attribute) const { return !!(AttributesEx12 & attribute); }
         bool HasAttribute(SpellAttr13 attribute) const { return !!(AttributesEx13 & attribute); }
+        bool HasAttribute(SpellAttr14 attribute) const { return !!(AttributesEx14 & attribute); }
         bool HasAttribute(SpellCustomAttributes customAttribute) const { return !!(AttributesCu & customAttribute); }
 
         bool HasAnyAuraInterruptFlag() const;
@@ -645,7 +650,7 @@ class TC_GAME_API SpellInfo
 
         uint32 GetMaxTicks() const;
 
-        uint32 CalcCastTime(uint8 level = 0, Spell* spell = nullptr) const;
+        uint32 CalcCastTime(Spell* spell = nullptr) const;
         uint32 GetRecoveryTime() const;
 
         std::vector<SpellPowerCost> CalcPowerCost(Unit const* caster, SpellSchoolMask schoolMask, Spell* spell = nullptr) const;
@@ -681,6 +686,9 @@ class TC_GAME_API SpellInfo
         bool SpellCancelsAuraEffect(AuraEffect const* aurEff) const;
 
         uint32 GetAllowedMechanicMask() const;
+
+        // Player Condition
+        bool MeetsFutureSpellPlayerCondition(Player const* player) const;
 
     private:
         // loading helpers
